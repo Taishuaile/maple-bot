@@ -1,0 +1,76 @@
+﻿{
+    "monitor_index":  2,
+    "minimap_roi":  {
+                        "left":  0,
+                        "top":  0,
+                        "width":  700,
+                        "height":  420
+                    },
+    "yellow_hsv":  {
+                       "lower":  [
+                                     18,
+                                     110,
+                                     110
+                                 ],
+                       "upper":  [
+                                     40,
+                                     255,
+                                     255
+                                 ]
+                   },
+    "points":  {
+                   "1":  [
+                             161,
+                             183
+                         ],
+                   "2":  [
+                             93,
+                             184
+                         ],
+                   "3":  [
+                             112,
+                             143
+                         ],
+                   "4":  [
+                             212,
+                             183
+                         ]
+               },
+    "keys":  {
+                 "left":  "left",
+                 "right":  "right",
+                 "jump":  "x",
+                 "up":  "up",
+                 "down":  "down",
+                 "upward":  "alt",
+                 "skill_m":  "m"
+             },
+    "hotkeys":  {
+                    "stop":  "f8",
+                    "pause":  "f7",
+                    "mark_1":  "f1",
+                    "mark_2":  "f2",
+                    "mark_3":  "f3",
+                    "mark_4":  "f4"
+                },
+    "timings":  {
+                    "key_tap_sec":  0.05,
+                    "between_key_sec":  0.5,
+                    "poll_sec":  0.03,
+                    "state_settle_sec":  0.2,
+                    "arrival_pause_sec":  0.5
+                },
+    "point1_attack_key":  "a",
+    "point1_attack_interval_sec":  2,
+    "arrival_radius_px":  12,
+    "arrival_radius_point1_px":  4,
+    "arrival_radius_other_points_strict_px":  3,
+    "arrival_radius_other_points_loose_px":  7,
+    "arrival_confirm_consecutive":  2,
+    "find_x_tolerance_px":  5,
+    "find_y_tolerance_px":  8,
+    "fine_nudge_x_px":  5,
+    "vertical_threshold_px":  16,
+    "stuck_seconds":  5.0,
+    "stuck_radius_px":  6
+}

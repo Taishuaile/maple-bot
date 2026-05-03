@@ -18,6 +18,37 @@ python -m pip install -r requirements.txt
 python bot.py
 ```
 
+## 不顯示終端機執行
+- 直接雙擊：
+```text
+run_bot_silent.vbs
+```
+- 會用 `pythonw` 啟動，不跳出黑色終端機視窗。
+- 停止方式：
+  - 在監控視窗按 `F8`，或
+  - 直接按視窗右上角 `X`（現在會真正停止，不會自動重開）
+
+## 參數圖形化介面（不改原流程邏輯）
+- 啟動：
+```powershell
+python config_editor.py
+```
+- 或雙擊：
+```bat
+run_config_editor.bat
+```
+- 無終端機版本（雙擊）：
+```text
+run_config_editor_silent.vbs
+```
+- 可調整內容：
+  - 鍵位（`keys` / `hotkeys`）
+  - 各種秒數（`timings`、`portal_retry_sec`）
+  - 偵測與移動容忍值
+  - `points` 座標與點位數量
+  - 到點動作腳本（`point_action_scripts`，可設定每個點位/狀態到點後要做的動作）
+- 注意：目前主流程仍使用 `1~4` 點；更多點位會先存進 `config.json` 供後續擴充。
+
 ## 第一次使用（重點）
 1. 先進遊戲地圖，切到你要跑的地圖。
 2. 啟動程式後，3 秒內切回遊戲畫面。

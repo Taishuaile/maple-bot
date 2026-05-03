@@ -30,7 +30,25 @@ class Point:
 
 def load_config() -> dict:
     with CONFIG_PATH.open("r", encoding="utf-8-sig") as f:
-        return json.load(f)
+        cfg = json.load(f)
+    cfg.setdefault(
+        "point_action_scripts",
+        {
+            "to_2_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
+            "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
+            "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
+            "to_1_arrive": [{"type": "tap", "key": "left"}],
+            "start_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
+            "pre50_return_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
+            "pre110_return_to_1_arrive": [
+                {"type": "tap", "key": "left"},
+                {"type": "press_seq", "keys": ["6"]},
+                {"type": "press_seq", "keys": ["r"]},
+                {"type": "press_seq", "keys": ["n"]},
+            ],
+        },
+    )
+    return cfg
 
 
 def save_config(cfg: dict) -> None:
@@ -384,6 +402,39 @@ class Bot:
     def press_seq(self, keys):
         for k in keys:
             self.tap(k, with_gap=True)
+
+    def _resolve_key_alias(self, token: str) -> str:
+        keys = self.cfg.get("keys", {})
+        return keys.get(token, token)
+
+    def run_action_script(self, script_name: str):
+        scripts = self.cfg.get("point_action_scripts", {})
+        actions = scripts.get(script_name)
+        if not isinstance(actions, list):
+            return
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            typ = str(action.get("type", "")).strip().lower()
+            if typ == "tap":
+                key = self._resolve_key_alias(str(action.get("key", "")).strip())
+                if key:
+                    self.tap(key, with_gap=bool(action.get("with_gap", True)))
+            elif typ == "press_seq":
+                raw_keys = action.get("keys", [])
+                if isinstance(raw_keys, list):
+                    keys = [self._resolve_key_alias(str(k).strip()) for k in raw_keys if str(k).strip()]
+                    if keys:
+                        self.press_seq(keys)
+            elif typ == "hold":
+                key = self._resolve_key_alias(str(action.get("key", "")).strip())
+                sec = float(action.get("sec", 0.05))
+                if key:
+                    self.hold(key, sec)
+            elif typ == "wait":
+                sec = float(action.get("sec", 0.0))
+                if sec > 0:
+                    time.sleep(sec)
 
     def p(self, idx: int):
         v = self.cfg["points"].get(str(idx))
@@ -739,6 +790,13 @@ class Bot:
 
         cv2.imshow("Maple Bot Monitor - Map", map_view)
         cv2.imshow("Maple Bot Monitor - Info", info)
+        # If user closes either window via X button, stop bot loop cleanly.
+        if cv2.getWindowProperty("Maple Bot Monitor - Map", cv2.WND_PROP_VISIBLE) < 1:
+            self.stop = True
+            return
+        if cv2.getWindowProperty("Maple Bot Monitor - Info", cv2.WND_PROP_VISIBLE) < 1:
+            self.stop = True
+            return
         key = cv2.waitKeyEx(1)
         if key != -1:
             self._handle_debug_key(key)
@@ -818,7 +876,7 @@ class Bot:
         # Core strict 0s route
         if self.current_state == "to_2":
             if self.confirm_arrived(pos, 2, "strict"):
-                self.press_seq([self.cfg["keys"]["skill_m"]])
+                self.run_action_script("to_2_arrive")
                 self.portal_check_required_23 = False
                 self.next_portal_try_t = time.time()
                 self.current_state = "to_3"
@@ -833,7 +891,7 @@ class Bot:
 
         if self.current_state == "to_3":
             if self.confirm_arrived(pos, 3, "strict"):
-                self.press_seq([self.cfg["keys"]["skill_m"]])
+                self.run_action_script("to_3_arrive")
                 self.portal_check_required_23 = False
                 self.current_state = "to_4"
             else:
@@ -852,7 +910,7 @@ class Bot:
 
         if self.current_state == "to_4":
             if self.confirm_arrived(pos, 4, "strict"):
-                self.press_seq([self.cfg["keys"]["skill_m"]])
+                self.run_action_script("to_4_arrive")
                 self.current_state = "to_1"
                 self.state_jump_done["to_1"] = False
             else:
@@ -865,7 +923,7 @@ class Bot:
 
         if self.current_state == "to_1":
             if self.reached_point1(pos):
-                self.tap(self.cfg["keys"]["left"])
+                self.run_action_script("to_1_arrive")
                 self.current_state = "hold_1"
                 self.maybe_start_queued_pink()
             else:
@@ -885,7 +943,7 @@ class Bot:
 
         if self.current_state == "start_to_1":
             if self.reached_point1(pos):
-                self.tap(self.cfg["keys"]["left"])
+                self.run_action_script("start_to_1_arrive")
                 self.cycle_started = time.time()
                 self.cycle_active = True
                 self.timer_pause_total = 0.0
@@ -895,7 +953,6 @@ class Bot:
                 self.event80_done = False
                 self.event110_done = False
                 self._reset_cycle_random_events()
-                self.press_seq(["n"])
                 self.state_jump_done["to_2"] = False
                 self.kickoff_to2()
                 print("[BOT] reached point1, timer started from 0s")
@@ -908,8 +965,7 @@ class Bot:
         # 50s flow: return 1 then N then loose big loop with 5s stops at 2/3/4
         if self.current_state == "pre50_return_to_1":
             if self.confirm_arrived(pos, 1, "strict"):
-                self.tap(self.cfg["keys"]["left"])
-                self.press_seq(["n"])
+                self.run_action_script("pre50_return_to_1_arrive")
                 self.resume_timer_after_54_n()
                 self.maybe_finish_manual_pink_alert("54")
                 if not self.started:
@@ -982,9 +1038,7 @@ class Bot:
         # 110s flow: return 1 then 6 then reset cycle and restart 0s flow
         if self.current_state == "pre110_return_to_1":
             if self.reached_point1(pos):
-                self.tap(self.cfg["keys"]["left"])
-                self.press_seq(["6"])
-                self.press_seq(["r"])
+                self.run_action_script("pre110_return_to_1_arrive")
                 self.cycle_started = time.time()
                 self.cycle_active = True
                 self.timer_pause_total = 0.0
@@ -994,7 +1048,6 @@ class Bot:
                 self.event80_done = False
                 self.event110_done = False
                 self._reset_cycle_random_events()
-                self.press_seq(["n"])
                 self.state_jump_done["to_2"] = False
                 self.kickoff_to2()
                 self.maybe_finish_manual_pink_alert("111")

@@ -20,20 +20,20 @@
   },
   "points": {
     "1": [
-      164,
-      93
-    ],
-    "2": [
-      90,
+      161,
       94
     ],
+    "2": [
+      85,
+      95
+    ],
     "3": [
-      112,
-      49
+      108,
+      50
     ],
     "4": [
-      223,
-      93
+      219,
+      94
     ]
   },
   "keys": {
@@ -73,5 +73,85 @@
   "vertical_threshold_px": 16,
   "stuck_seconds": 5.0,
   "stuck_radius_px": 6,
-  "pink_detection_enabled": false
+  "pink_detection_enabled": false,
+  "point_action_scripts": {
+    "to_2_arrive": [
+      {
+        "type": "press_seq",
+        "keys": [
+          "skill_m"
+        ]
+      }
+    ],
+    "to_3_arrive": [
+      {
+        "type": "press_seq",
+        "keys": [
+          "skill_m"
+        ]
+      }
+    ],
+    "to_4_arrive": [
+      {
+        "type": "press_seq",
+        "keys": [
+          "skill_m"
+        ]
+      }
+    ],
+    "to_1_arrive": [
+      {
+        "type": "tap",
+        "key": "left"
+      }
+    ],
+    "start_to_1_arrive": [
+      {
+        "type": "tap",
+        "key": "left"
+      },
+      {
+        "type": "press_seq",
+        "keys": [
+          "n"
+        ]
+      }
+    ],
+    "pre50_return_to_1_arrive": [
+      {
+        "type": "tap",
+        "key": "left"
+      },
+      {
+        "type": "press_seq",
+        "keys": [
+          "n"
+        ]
+      }
+    ],
+    "pre110_return_to_1_arrive": [
+      {
+        "type": "tap",
+        "key": "left"
+      },
+      {
+        "type": "press_seq",
+        "keys": [
+          "6"
+        ]
+      },
+      {
+        "type": "press_seq",
+        "keys": [
+          "r"
+        ]
+      },
+      {
+        "type": "press_seq",
+        "keys": [
+          "n"
+        ]
+      }
+    ]
+  }
 }

@@ -66,15 +66,13 @@ class Bot:
         self.mss_ctx = mss.MSS()
         monitors = self.mss_ctx.monitors
         monitor_count = len(monitors)
-        raw_index = int(cfg.get("monitor_index", 1))
-        # mss.monitors[0] is the virtual bounding monitor; prefer real monitor index >= 1.
+        # Force monitor 2 by request. If unavailable, fallback to first real monitor.
+        raw_index = 2
         fallback_index = 1 if monitor_count > 1 else 0
         selected_index = raw_index if 0 <= raw_index < monitor_count else fallback_index
         if selected_index != raw_index:
-            cfg["monitor_index"] = selected_index
-            save_config(cfg)
             print(
-                f"[monitor] monitor_index={raw_index} out of range (0..{monitor_count - 1}), "
+                f"[monitor] monitor 2 unavailable (range 0..{monitor_count - 1}), "
                 f"fallback to {selected_index}."
             )
         self.monitor = monitors[selected_index]
@@ -478,6 +476,13 @@ class Bot:
             self.arrival_counts[k] = 0
         return ok
 
+    def y_aligned(self, pos: Point, idx: int, extra: int = 0) -> bool:
+        t = self.p(idx)
+        if t is None:
+            return False
+        y_tol = int(self.cfg.get("find_y_tolerance_px", 8)) + int(extra)
+        return abs(t.y - pos.y) <= y_tol
+
     def near_point(self, pos: Point, idx: int) -> bool:
         t = self.p(idx)
         if t is None:
@@ -506,12 +511,13 @@ class Bot:
         # Screen/minimap y grows downward:
         # pos.y > target.y => character is below target => should move up.
         pos_minus_target = pos.y - target.y
-        th = int(self.cfg.get("vertical_threshold_px", 16))
-        if pos_minus_target > th:
+        th_up = int(self.cfg.get("vertical_threshold_up_px", self.cfg.get("find_y_tolerance_px", 8)))
+        th_down = int(self.cfg.get("vertical_threshold_down_px", self.cfg.get("vertical_threshold_px", 16)))
+        if pos_minus_target > th_up:
             print(f"[BOT] vertical adjust: up (pos.y={pos.y} > target.y={target.y})")
             self.tap(self.cfg["keys"]["upward"])
             return True
-        if pos_minus_target < -th:
+        if pos_minus_target < -th_down:
             print(f"[BOT] vertical adjust: down (pos.y={pos.y} < target.y={target.y})")
             self.down_jump_once()
             return True
@@ -610,7 +616,7 @@ class Bot:
             self.current_state = "pre110_return_to_1"
             print("[BOT] trigger 111s")
             return
-        if (not self.event50_done) and sec >= 54:
+        if (not self.event50_done) and sec >= 56:
             self.event50_done = True
             self.pause_timer_for_54_flow()
             if self.last_seen_pos is not None and self.arrived(self.last_seen_pos, 1, "strict"):
@@ -978,7 +984,7 @@ class Bot:
             return
 
         if self.current_state == "loose_loop_to_2":
-            if self.confirm_arrived(pos, 2, "loose"):
+            if self.confirm_arrived(pos, 2, "loose") and self.y_aligned(pos, 2, extra=0):
                 self.pause_until = time.time() + 5.0
                 self.current_state = "loose_loop_wait_2"
             else:
@@ -993,7 +999,7 @@ class Bot:
             return
 
         if self.current_state == "loose_loop_to_3":
-            if self.confirm_arrived(pos, 3, "loose"):
+            if self.confirm_arrived(pos, 3, "loose") and self.y_aligned(pos, 3, extra=0):
                 self.pause_until = time.time() + 5.0
                 self.current_state = "loose_loop_wait_3"
             else:
@@ -1008,7 +1014,7 @@ class Bot:
             return
 
         if self.current_state == "loose_loop_to_4":
-            if self.confirm_arrived(pos, 4, "loose"):
+            if self.confirm_arrived(pos, 4, "loose") and self.y_aligned(pos, 4, extra=0):
                 self.pause_until = time.time() + 5.0
                 self.current_state = "loose_loop_wait_4"
             else:

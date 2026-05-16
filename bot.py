@@ -35,8 +35,8 @@ def load_config() -> dict:
         "point_action_scripts",
         {
             "to_2_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
-            "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
-            "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
+            "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m", "f"]}],
+            "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m", "d"]}],
             "to_1_arrive": [{"type": "tap", "key": "left"}],
             "start_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
             "pre50_return_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
@@ -122,13 +122,10 @@ class Bot:
         self.next_attack_t = time.time() + random.uniform(1.5, 4.0)
 
     def _reset_cycle_random_events(self):
-        # Pick two distinct whole seconds inside one 0~110s cycle.
-        t1, t2 = sorted(random.sample(range(1, 111), 2))
-        self.event_d_sec = float(t1)
-        self.event_f_sec = float(t2)
-        self.event_d_done = False
-        self.event_f_done = False
-        print(f"[BOT] random schedule: D@{self.event_d_sec:.0f}s F@{self.event_f_sec:.0f}s")
+        self.event_d_sec = float("inf")
+        self.event_f_sec = float("inf")
+        self.event_d_done = True
+        self.event_f_done = True
 
     def current_poll_sec(self) -> float:
         normal = float(self.cfg["timings"].get("poll_sec", 0.03))
@@ -473,6 +470,21 @@ class Bot:
         if ok:
             sec = int(self.cycle_elapsed_sec()) if (self.started and self.cycle_active) else 0
             print(f"[BOT] sec={sec} arrived point={idx} mode={mode}")
+            self.arrival_counts[k] = 0
+        return ok
+
+    def confirm_arrived_exact_x(self, pos: Point, idx: int, mode: str = "strict") -> bool:
+        target = self.p(idx)
+        need = int(self.cfg.get("arrival_confirm_consecutive", 2))
+        k = f"{idx}:{mode}:exact_x"
+        if target is not None and pos.x == target.x and self.arrived(pos, idx, mode):
+            self.arrival_counts[k] = self.arrival_counts.get(k, 0) + 1
+        else:
+            self.arrival_counts[k] = 0
+        ok = self.arrival_counts.get(k, 0) >= need
+        if ok:
+            sec = int(self.cycle_elapsed_sec()) if (self.started and self.cycle_active) else 0
+            print(f"[BOT] sec={sec} arrived point={idx} mode={mode} exact_x")
             self.arrival_counts[k] = 0
         return ok
 
@@ -860,20 +872,6 @@ class Bot:
 
         self.check_timed_events()
         cycle_sec = self.cycle_elapsed_sec()
-        keys = self.cfg["keys"]
-        d_key = keys.get("skill_d", "d")
-        f_key = keys.get("skill_f", "f")
-
-        if self.cycle_active:
-            if (not self.event_d_done) and cycle_sec >= self.event_d_sec:
-                self.tap(d_key)
-                self.event_d_done = True
-                print(f"[BOT] random D at {cycle_sec:.1f}s (target {self.event_d_sec:.1f}s)")
-
-            if (not self.event_f_done) and cycle_sec >= self.event_f_sec:
-                self.tap(f_key)
-                self.event_f_done = True
-                print(f"[BOT] random F at {cycle_sec:.1f}s (target {self.event_f_sec:.1f}s)")
 
         if time.time() >= self.next_attack_t:
             self.tap(self.cfg["point1_attack_key"])
@@ -881,7 +879,7 @@ class Bot:
 
         # Core strict 0s route
         if self.current_state == "to_2":
-            if self.confirm_arrived(pos, 2, "strict"):
+            if self.confirm_arrived_exact_x(pos, 2, "strict"):
                 self.run_action_script("to_2_arrive")
                 self.portal_check_required_23 = False
                 self.next_portal_try_t = time.time()

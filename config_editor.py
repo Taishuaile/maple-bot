@@ -7,8 +7,8 @@ from tkinter import messagebox, ttk
 CONFIG_PATH = Path(__file__).with_name("config.json")
 DEFAULT_POINT_ACTION_SCRIPTS = {
     "to_2_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
-    "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
-    "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
+    "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m", "f"]}],
+    "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m", "d"]}],
     "to_1_arrive": [{"type": "tap", "key": "left"}],
     "start_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
     "pre50_return_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],

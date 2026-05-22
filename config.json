@@ -28,8 +28,8 @@
       64
     ],
     "3": [
-      76,
-      35
+      125,
+      95
     ],
     "4": [
       147,
@@ -85,20 +85,28 @@
     ],
     "to_3_arrive": [
       {
-        "type": "press_seq",
-        "keys": [
-          "skill_m",
-          "f"
-        ]
+        "type": "tap",
+        "key": "skill_m",
+        "with_gap": false
+      },
+      {
+        "type": "tap",
+        "key": "f",
+        "with_gap": false,
+        "pre_delay": false
       }
     ],
     "to_4_arrive": [
       {
-        "type": "press_seq",
-        "keys": [
-          "skill_m",
-          "d"
-        ]
+        "type": "tap",
+        "key": "skill_m",
+        "with_gap": false
+      },
+      {
+        "type": "tap",
+        "key": "d",
+        "with_gap": false,
+        "pre_delay": false
       }
     ],
     "to_1_arrive": [

@@ -35,8 +35,14 @@ def load_config() -> dict:
         "point_action_scripts",
         {
             "to_2_arrive": [{"type": "press_seq", "keys": ["skill_m"]}],
-            "to_3_arrive": [{"type": "press_seq", "keys": ["skill_m", "f"]}],
-            "to_4_arrive": [{"type": "press_seq", "keys": ["skill_m", "d"]}],
+            "to_3_arrive": [
+                {"type": "tap", "key": "skill_m", "with_gap": False},
+                {"type": "tap", "key": "f", "with_gap": False, "pre_delay": False},
+            ],
+            "to_4_arrive": [
+                {"type": "tap", "key": "skill_m", "with_gap": False},
+                {"type": "tap", "key": "d", "with_gap": False, "pre_delay": False},
+            ],
             "to_1_arrive": [{"type": "tap", "key": "left"}],
             "start_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
             "pre50_return_to_1_arrive": [{"type": "tap", "key": "left"}, {"type": "press_seq", "keys": ["n"]}],
@@ -380,8 +386,9 @@ class Bot:
         self.current_state = "to_pink"
         print("[PINK] cycle finished, now moving to pink target")
 
-    def tap(self, key: str, with_gap: bool = True):
-        time.sleep(self._random_fixed_key_delay())
+    def tap(self, key: str, with_gap: bool = True, pre_delay: bool = True):
+        if pre_delay:
+            time.sleep(self._random_fixed_key_delay())
         t = self.cfg["timings"]["key_tap_sec"]
         pydirectinput.keyDown(key)
         time.sleep(t)
@@ -414,7 +421,11 @@ class Bot:
             if typ == "tap":
                 key = self._resolve_key_alias(str(action.get("key", "")).strip())
                 if key:
-                    self.tap(key, with_gap=bool(action.get("with_gap", True)))
+                    self.tap(
+                        key,
+                        with_gap=bool(action.get("with_gap", True)),
+                        pre_delay=bool(action.get("pre_delay", True)),
+                    )
             elif typ == "press_seq":
                 raw_keys = action.get("keys", [])
                 if isinstance(raw_keys, list):
@@ -470,21 +481,6 @@ class Bot:
         if ok:
             sec = int(self.cycle_elapsed_sec()) if (self.started and self.cycle_active) else 0
             print(f"[BOT] sec={sec} arrived point={idx} mode={mode}")
-            self.arrival_counts[k] = 0
-        return ok
-
-    def confirm_arrived_exact_x(self, pos: Point, idx: int, mode: str = "strict") -> bool:
-        target = self.p(idx)
-        need = int(self.cfg.get("arrival_confirm_consecutive", 2))
-        k = f"{idx}:{mode}:exact_x"
-        if target is not None and pos.x == target.x and self.arrived(pos, idx, mode):
-            self.arrival_counts[k] = self.arrival_counts.get(k, 0) + 1
-        else:
-            self.arrival_counts[k] = 0
-        ok = self.arrival_counts.get(k, 0) >= need
-        if ok:
-            sec = int(self.cycle_elapsed_sec()) if (self.started and self.cycle_active) else 0
-            print(f"[BOT] sec={sec} arrived point={idx} mode={mode} exact_x")
             self.arrival_counts[k] = 0
         return ok
 
@@ -879,7 +875,7 @@ class Bot:
 
         # Core strict 0s route
         if self.current_state == "to_2":
-            if self.confirm_arrived_exact_x(pos, 2, "strict"):
+            if self.confirm_arrived(pos, 2, "strict"):
                 self.run_action_script("to_2_arrive")
                 self.portal_check_required_23 = False
                 self.next_portal_try_t = time.time()
